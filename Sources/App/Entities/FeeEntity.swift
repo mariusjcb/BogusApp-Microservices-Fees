@@ -29,7 +29,7 @@ final class FeeEntity: Model, Content {
     }
     
     func convert(linking benefits: [Benefit]) -> Fee {
-        .init(id: id, price: price, benefits: benefits, type: type)
+        .init(id: id ?? UUID(), price: price, benefits: benefits, type: type)
     }
 }
 

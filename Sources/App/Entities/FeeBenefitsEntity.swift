@@ -8,14 +8,14 @@ final class FeeBenefitEntity: Model, Content {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "feeIds")
-    var feeIds: FeeEntity.ID
+    @Field(key: "feeId")
+    var feeId: FeeEntity.IDValue
     
-    @Field(key: "benefitIds")
-    var benefitIds: String
+    @Field(key: "benefitId")
+    var benefitId: String
     
-    var fee: Parent<FeeBenefitEntity, Fee> {
-        
+    var fee: Parent<FeeBenefitEntity, FeeEntity> {
+        return parent(\.feeId)
     }
 }
  

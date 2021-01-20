@@ -6,31 +6,22 @@ struct FeesController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let fees = routes.grouped("")
         fees.get(use: index)
-        fees.post(use: create)
-        fees.group(":id") { fee in
-            fee.delete(use: delete)
-        }
     }
 
-    func index(req: Request) throws -> EventLoopFuture<[Benefit]> {
-        return FeeEntity.query(on: req.db).all().mapEach { $0.convert() }
+    func index(req: Request) throws -> EventLoopFuture<[Fee]> {
+        return FeeEntity.query(on: req.db).all()
+            .sequencedFlatMapEachCompact { fee -> EventLoopFuture<Fee?> in
+                self.fetchBenefits(req: req, for: fee.id!)
+                    .map { Fee(id: fee.id!, price: fee.price, benefits: $0, type: fee.type) }
+            }
     }
 
-    func create(req: Request) throws -> EventLoopFuture<Benefit> {
-        guard req.remoteAddress?.hostname == "127.0.0.1" else {
-            Abort(.forbidden)
+    func fetchBenefits(req: Request, for benefitId: UUID) -> EventLoopFuture<[Benefit]> {
+        var url = URI(string: Microservices.benefits.host ?? "")
+        url.path = benefitId.uuidString
+        let request = ClientRequest(method: .GET, url: url, headers: HTTPHeaders(), body: nil)
+        return req.client.send(request).map {
+            try! JSONDecoder().decode([Benefit].self, from: $0.body!)
         }
-        let fee = try req.content.decode(BenefitEntity.self)
-        return fee.save(on: req.db).map { fee.convert() }
-    }
-
-    func delete(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        guard req.remoteAddress?.hostname == "127.0.0.1" else {
-            Abort(.forbidden)
-        }
-        return FeeEntity.find(req.parameters.get("id"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { $0.delete(on: req.db) }
-            .transform(to: .ok)
     }
 }
