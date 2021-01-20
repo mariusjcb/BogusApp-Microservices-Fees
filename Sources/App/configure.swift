@@ -15,7 +15,11 @@ public func configure(_ app: Application) throws {
         database: Environment.get("DATABASE_NAME") ?? "vapor_database"
     ), as: .psql)
 
-    app.migrations.add(CreateTodo())
+    app.migrations.add(CreateFee())
+    app.migrations.add(InsertDemoFees())
+    app.autoMigrate().whenSuccess {
+        print("Migration done on Fees service...")
+    }
 
     // register routes
     try routes(app)
